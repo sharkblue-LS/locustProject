@@ -24,7 +24,11 @@ class TaskCase(SequentialTaskSet):
 	def open_links(self):
 		#由于权重配置，无法确保open_links任务执行时，self.urlList包含文章链接列表
 		for url in self.urlList:
-			self.client.get(url,name="open_links")
+			with self.client.get(url,name="open_links",catch_response=True) as resp:
+				if resp.elapsed.total_seconds() < 3:
+					resp.failure("Request took too long")
+				else:
+					resp.success()
 		
 #继承HttpUser
 class cnblogUser(HttpUser):

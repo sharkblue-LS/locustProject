@@ -25,10 +25,18 @@ class TaskCase(SequentialTaskSet):
 		#由于权重配置，无法确保open_links任务执行时，self.urlList包含文章链接列表
 		for url in self.urlList:
 			with self.client.get(url,name="open_links",catch_response=True) as resp:
-				if resp.elapsed.total_seconds() < 3:
+				if resp.elapsed.total_seconds() > 3:
 					resp.failure("Request took too long")
 				else:
 					resp.success()
+					
+	@task
+	def search_page(self):
+		with self.client.get('/',catch_response=True) as resp:
+			if "test" in resp.text:
+				resp.success()
+			else:
+				resp.failure(resp.text)
 		
 #继承HttpUser
 class cnblogUser(HttpUser):

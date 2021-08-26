@@ -42,4 +42,4 @@ class TaskCase(SequentialTaskSet):
 class cnblogUser(HttpUser):
 	tasks = [TaskCase]
 	wait_time = constant(3)
-	
+

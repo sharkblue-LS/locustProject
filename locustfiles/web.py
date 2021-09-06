@@ -1,4 +1,4 @@
-from locust import HttpUser,task,constant,SequentialTaskSet,TaskSet
+from locust import HttpUser, task, constant, SequentialTaskSet, TaskSet
 import re
 
 
@@ -43,7 +43,7 @@ import re
 # 	tasks = [TaskCase]
 # 	wait_time = constant(3)
 
-#循环取数据，数据可重复使用
+# 循环取数据，数据可重复使用
 # class UserBehavior(TaskSet):
 # 	def on_start(self):
 # 		self.index = 0
@@ -63,37 +63,43 @@ import re
 # 	min_wait = 1000
 # 	max_wait = 3000
 
-#保证并发测试数据唯一性，不循环取数据
+# 保证并发测试数据唯一性，不循环取数据
 import queue
 
+
 class UserBehavior(TaskSet):
-	
-	@task
-	def test_register(self):
-		try:
-			data = self.user.user_data_queue.get()
-		except queue.Empty:
-			print('account data run out,test ended.')
-			exit(0)
-			
-		print('register with user:{},pwd:{}'.format(data['username'],data['password']))
-		payload = {'username':data['username'],'password':data['password']}
-		
-		self.client.post('/register',data=payload)
-		
+
+    @task
+    def test_register(self):
+        try:
+            data = self.user.user_data_queue.get(timeout=5)
+            #block，当队列中没有数据元素继续取数据时：如果 block=False，直接引发 queue.Empty 异常；
+            # 如果 block=True，且 timeout=None，则一直等待直到有数据入队列后可以取出数据；
+            # 如果 block=True，且 timeout=N，N 为某一正整数时，则等待 N 秒，如果队列中还没有数据放入的话就引发 queue.Empty 异常。
+            
+            print(
+                'register with user:{},pwd:{}'.format(
+                    data['username'],
+                    data['password']))
+            payload = {'username': data['username'], 'password': data['password']}
+
+            self.client.post('/register', data=payload)
+        except queue.Empty:
+            print('account data run out,test ended.')
+            exit(0)
+
 class WebsiteUser(HttpUser):
-	host = 'https://debugtalk.com'
-	tasks = [UserBehavior]
-	
-	user_data_queue = queue.Queue()
-	for index in range(10):
-		data = {'username':'test%04d'%index,
-		        'password':'pwd%04d'%index,
-		        'email':'test%04d@debugtalk.test'%index,
-		        'phone':'186%08d'%index}
-		user_data_queue.put_nowait(data)
-		
-	min_wait = 1000
-	max_wait = 3000
-	
+    host = 'https://debugtalk.com'
+    tasks = [UserBehavior]
+
+    user_data_queue = queue.Queue()
+    for index in range(10):
+        data = {'username': 'test%04d' % index,
+                'password': 'pwd%04d' % index,
+                'email': 'test%04d@debugtalk.test' % index,
+                'phone': '186%08d' % index}
+        user_data_queue.put_nowait(data)
+
+    min_wait = 1000
+    max_wait = 3000
 
